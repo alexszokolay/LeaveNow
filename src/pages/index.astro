@@ -1,19 +1,359 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Markdown from '../components/Markdown.astro';
-
-const explainer = `
-An Astro website can go way beyond static pages - on the right platform.
-
-Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
-Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
-`;
 ---
 
-<Layout title="Welcome to Astro.">
-    <h1 class="mb-10">Netlify Platform Starter for Astro</h1>
-    <Markdown content={explainer} class="mb-10 text-lg" />
-    <p>
-        <a href="https://docs.netlify.com/frameworks/astro/" class="btn btn-lg sm:min-w-64">Read the Docs</a>
-    </p>
+<Layout title="Should I Leave Now?">
+    <section class="grid items-start gap-10 md:grid-cols-[1.1fr_0.9fr]">
+        <div class="space-y-6">
+            <p class="text-xs uppercase tracking-[0.3em] text-primary">Real-time commute assistant</p>
+            <h1>Should I Leave Now?</h1>
+            <p class="text-lg text-white/80">
+                Plan the best route, get a clear leave time, and see how stable the ETA is before you step out the
+                door.
+            </p>
+            <div class="flex flex-wrap gap-3 text-sm">
+                <span class="rounded-full border border-white/20 px-3 py-1">Realtime ETAs</span>
+                <span class="rounded-full border border-white/20 px-3 py-1">Risk scoring</span>
+                <span class="rounded-full border border-white/20 px-3 py-1">Multi-route compare</span>
+            </div>
+            <div class="rounded-xl border border-white/10 bg-white/5 p-5">
+                <p class="text-sm text-white/70">
+                    Demo line: "It tells you when to leave to catch the best route, and warns you if the ETA is
+                    unstable."
+                </p>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-white/10 bg-white/10 p-6 shadow-xl backdrop-blur">
+            <form id="plan-form" class="space-y-5">
+                <div class="relative space-y-2">
+                    <label class="text-sm uppercase tracking-wide text-white/70" for="from-input">From</label>
+                    <input
+                        id="from-input"
+                        class="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-3 text-white outline-none focus:border-primary"
+                        placeholder="Search for a stop"
+                        autocomplete="off"
+                    />
+                    <div
+                        id="from-results"
+                        class="absolute z-20 mt-2 hidden w-full rounded-lg border border-white/10 bg-complementary/95 p-2 text-sm shadow-lg"
+                    ></div>
+                </div>
+
+                <div class="relative space-y-2">
+                    <label class="text-sm uppercase tracking-wide text-white/70" for="to-input">To</label>
+                    <input
+                        id="to-input"
+                        class="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-3 text-white outline-none focus:border-primary"
+                        placeholder="Search for a stop"
+                        autocomplete="off"
+                    />
+                    <div
+                        id="to-results"
+                        class="absolute z-20 mt-2 hidden w-full rounded-lg border border-white/10 bg-complementary/95 p-2 text-sm shadow-lg"
+                    ></div>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="space-y-2">
+                        <label class="text-sm uppercase tracking-wide text-white/70" for="time-type">Time</label>
+                        <select
+                            id="time-type"
+                            class="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-white outline-none focus:border-primary"
+                        >
+                            <option value="leave">Leave at</option>
+                            <option value="arrive">Arrive by</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm uppercase tracking-wide text-white/70" for="time-value">When</label>
+                        <input
+                            id="time-value"
+                            type="datetime-local"
+                            class="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-white outline-none focus:border-primary"
+                        />
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <button type="submit" class="btn btn-lg flex-1">Plan my trip</button>
+                    <button
+                        type="button"
+                        id="swap-button"
+                        class="rounded-lg border border-white/30 px-4 py-3 text-sm text-white/80 transition hover:border-primary"
+                    >
+                        Swap
+                    </button>
+                </div>
+                <p id="status" class="text-sm text-white/70" role="status"></p>
+            </form>
+        </div>
+    </section>
+
+    <section class="mt-12 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <div id="result-card" class="hidden rounded-2xl border border-white/10 bg-white/10 p-6">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm uppercase tracking-wide text-white/70">Best option</p>
+                    <h2 id="result-title" class="mt-2 text-2xl"></h2>
+                    <p id="result-summary" class="mt-2 text-white/80"></p>
+                </div>
+                <div class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+                    <p class="text-xs uppercase tracking-wide text-white/60">Confidence</p>
+                    <p id="confidence-score" class="mt-1 text-2xl font-semibold"></p>
+                    <p id="confidence-level" class="text-xs text-white/70"></p>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <div class="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <p class="text-xs uppercase tracking-wide text-white/60">Leave at</p>
+                    <p id="leave-time" class="mt-1 text-lg"></p>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <p class="text-xs uppercase tracking-wide text-white/60">Arrive by</p>
+                    <p id="arrive-time" class="mt-1 text-lg"></p>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <p class="text-xs uppercase tracking-wide text-white/60">Duration</p>
+                    <p id="duration" class="mt-1 text-lg"></p>
+                </div>
+            </div>
+            <div class="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
+                <p class="text-sm uppercase tracking-wide text-white/60">Reliability notes</p>
+                <ul id="reliability-notes" class="mt-2 space-y-1 text-sm text-white/80"></ul>
+                <p id="stale-warning" class="mt-3 text-xs text-amber-200"></p>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-white/10 bg-white/10 p-6">
+            <p class="text-sm uppercase tracking-wide text-white/70">Alternatives</p>
+            <div id="alternatives" class="mt-4 space-y-3 text-sm text-white/80">
+                <p>Plan a trip to see backup routes and timing variance.</p>
+            </div>
+            <div class="mt-6 border-t border-white/10 pt-4">
+                <p class="text-sm uppercase tracking-wide text-white/70">Favorites (in memory)</p>
+                <div id="favorites" class="mt-3 space-y-2 text-sm text-white/80">
+                    <p>No favorites yet.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script type="module">
+        const statusEl = document.getElementById('status');
+        const resultCard = document.getElementById('result-card');
+        const alternativesEl = document.getElementById('alternatives');
+        const favoritesEl = document.getElementById('favorites');
+
+        const fromInput = document.getElementById('from-input');
+        const toInput = document.getElementById('to-input');
+        const fromResults = document.getElementById('from-results');
+        const toResults = document.getElementById('to-results');
+        const timeType = document.getElementById('time-type');
+        const timeValue = document.getElementById('time-value');
+
+        const resultTitle = document.getElementById('result-title');
+        const resultSummary = document.getElementById('result-summary');
+        const leaveTime = document.getElementById('leave-time');
+        const arriveTime = document.getElementById('arrive-time');
+        const duration = document.getElementById('duration');
+        const confidenceScore = document.getElementById('confidence-score');
+        const confidenceLevel = document.getElementById('confidence-level');
+        const reliabilityNotes = document.getElementById('reliability-notes');
+        const staleWarning = document.getElementById('stale-warning');
+
+        const state = {
+            from: null,
+            to: null,
+            favorites: []
+        };
+
+        const formatTime = (epoch) => {
+            if (!epoch) return '--';
+            const date = new Date(epoch * 1000);
+            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        };
+
+        const formatDuration = (seconds) => {
+            if (!seconds) return '--';
+            const minutes = Math.round(seconds / 60);
+            if (minutes < 60) return `${minutes} min`;
+            const hours = Math.floor(minutes / 60);
+            const rem = minutes % 60;
+            return `${hours}h ${rem}m`;
+        };
+
+        const setStatus = (message, tone = 'info') => {
+            statusEl.textContent = message;
+            statusEl.className = tone === 'error' ? 'text-sm text-amber-200' : 'text-sm text-white/70';
+        };
+
+        const debounce = (fn, wait = 250) => {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), wait);
+            };
+        };
+
+        const fetchStops = async (query) => {
+            const url = new URL('/api/transit/search', window.location.origin);
+            url.searchParams.set('query', query);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Search failed');
+            return response.json();
+        };
+
+        const renderResults = (container, items, onPick) => {
+            container.innerHTML = '';
+            if (!items.length) {
+                container.classList.add('hidden');
+                return;
+            }
+            items.forEach((item) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className =
+                    'flex w-full items-start justify-between rounded-md px-3 py-2 text-left text-white/80 hover:bg-white/10';
+                const title = document.createElement('span');
+                title.textContent = item.stop_name;
+                const meta = document.createElement('span');
+                meta.className = 'text-xs text-white/50';
+                meta.textContent = item.global_stop_id;
+                button.appendChild(title);
+                button.appendChild(meta);
+                button.addEventListener('click', () => onPick(item));
+                container.appendChild(button);
+            });
+            container.classList.remove('hidden');
+        };
+
+        const setupAutocomplete = (input, container, setter) => {
+            const handler = debounce(async () => {
+                const query = input.value.trim();
+                if (query.length < 2) {
+                    container.classList.add('hidden');
+                    return;
+                }
+                try {
+                    const data = await fetchStops(query);
+                    renderResults(container, data.results || [], (item) => {
+                        setter(item);
+                        input.value = item.stop_name;
+                        container.classList.add('hidden');
+                    });
+                } catch {
+                    container.classList.add('hidden');
+                }
+            }, 300);
+
+            input.addEventListener('input', handler);
+            input.addEventListener('focus', handler);
+        };
+
+        const renderFavorites = () => {
+            favoritesEl.innerHTML = '';
+            if (!state.favorites.length) {
+                favoritesEl.textContent = 'No favorites yet.';
+                return;
+            }
+            state.favorites.forEach((favorite) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className =
+                    'flex w-full items-center justify-between rounded-md border border-white/10 px-3 py-2 text-left text-white/80 hover:border-primary';
+                button.textContent = `${favorite.from.stop_name} -> ${favorite.to.stop_name}`;
+                button.addEventListener('click', () => {
+                    state.from = favorite.from;
+                    state.to = favorite.to;
+                    fromInput.value = favorite.from.stop_name;
+                    toInput.value = favorite.to.stop_name;
+                });
+                favoritesEl.appendChild(button);
+            });
+        };
+
+        setupAutocomplete(fromInput, fromResults, (item) => (state.from = item));
+        setupAutocomplete(toInput, toResults, (item) => (state.to = item));
+
+        document.getElementById('swap-button').addEventListener('click', () => {
+            const temp = state.from;
+            state.from = state.to;
+            state.to = temp;
+            const fromValue = fromInput.value;
+            fromInput.value = toInput.value;
+            toInput.value = fromValue;
+        });
+
+        document.getElementById('plan-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!state.from || !state.to) {
+                setStatus('Select both origin and destination stops from the list.', 'error');
+                return;
+            }
+            setStatus('Planning your route...');
+            const timeSelection = timeValue.value ? Math.floor(new Date(timeValue.value).getTime() / 1000) : null;
+
+            try {
+                const response = await fetch('/api/transit/plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        from: state.from,
+                        to: state.to,
+                        timeType: timeType.value,
+                        timeValue: timeSelection
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Planning failed');
+                }
+
+                resultCard.classList.remove('hidden');
+                resultTitle.textContent = data.best?.summary || 'Best route';
+                resultSummary.textContent = `From ${state.from.stop_name} to ${state.to.stop_name}`;
+                leaveTime.textContent = formatTime(data.best?.start_time);
+                arriveTime.textContent = formatTime(data.best?.end_time);
+                duration.textContent = formatDuration(data.best?.duration);
+                confidenceScore.textContent = `${data.reliability?.score ?? '--'}/100`;
+                confidenceLevel.textContent = data.reliability?.level || '';
+
+                reliabilityNotes.innerHTML = '';
+                (data.reliability?.reasons || []).forEach((note) => {
+                    const li = document.createElement('li');
+                    li.textContent = `- ${note}`;
+                    reliabilityNotes.appendChild(li);
+                });
+
+                staleWarning.textContent = data.meta?.stale
+                    ? 'Using cached results due to a temporary API error.'
+                    : '';
+
+                alternativesEl.innerHTML = '';
+                const alternatives = data.alternatives || [];
+                if (alternatives.length === 0) {
+                    alternativesEl.textContent = 'No alternates returned.';
+                } else {
+                    alternatives.forEach((alt) => {
+                        const row = document.createElement('div');
+                        row.className = 'rounded-lg border border-white/10 bg-white/5 px-3 py-2';
+                        row.textContent = `${alt.summary} | ${formatDuration(alt.duration)}`;
+                        alternativesEl.appendChild(row);
+                    });
+                }
+
+                if (!state.favorites.find((fav) => fav.from.stop_name === state.from.stop_name && fav.to.stop_name === state.to.stop_name)) {
+                    state.favorites.unshift({ from: state.from, to: state.to });
+                    state.favorites = state.favorites.slice(0, 3);
+                    renderFavorites();
+                }
+
+                setStatus('Ready.');
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Something went wrong';
+                setStatus(message, 'error');
+            }
+        });
+    </script>
 </Layout>
