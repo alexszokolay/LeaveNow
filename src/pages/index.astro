@@ -2,41 +2,29 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Should I Leave Now?">
-    <section class="grid items-start gap-10 md:grid-cols-[1.1fr_0.9fr]">
-        <div class="space-y-6">
-            <p class="text-xs uppercase tracking-[0.3em] text-primary">Real-time commute assistant</p>
-            <h1>Should I Leave Now?</h1>
-            <p class="text-lg text-white/80">
-                Plan the best route, get a clear leave time, and see how stable the ETA is before you step out the
-                door.
-            </p>
-            <div class="flex flex-wrap gap-3 text-sm">
-                <span class="rounded-full border border-white/20 px-3 py-1">Realtime ETAs</span>
-                <span class="rounded-full border border-white/20 px-3 py-1">Risk scoring</span>
-                <span class="rounded-full border border-white/20 px-3 py-1">Multi-route compare</span>
-            </div>
-            <div class="rounded-xl border border-white/10 bg-white/5 p-5">
-                <p class="text-sm text-white/70">
-                    Demo line: "It tells you when to leave to catch the best route, and warns you if the ETA is
-                    unstable."
-                </p>
-            </div>
-        </div>
+<Layout title="Leave Now Planner">
+    <Fragment slot="head">
+        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+    </Fragment>
 
-        <div class="rounded-2xl border border-white/10 bg-white/10 p-6 shadow-xl backdrop-blur">
+    <section class="grid items-start gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <div class="panel rounded-2xl p-6">
+            <div class="mb-6 space-y-2">
+                <h1 class="text-3xl sm:text-4xl">Leave Now Planner</h1>
+                <p class="text-sm text-white/70">Pick a route, check ETA confidence, and leave at the right moment.</p>
+            </div>
             <form id="plan-form" class="space-y-5">
                 <div class="relative space-y-2">
                     <label class="text-sm uppercase tracking-wide text-white/70" for="from-input">From</label>
                     <input
                         id="from-input"
                         class="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-3 text-white outline-none focus:border-primary"
-                        placeholder="Search for a stop"
+                        placeholder="Enter an address"
                         autocomplete="off"
                     />
                     <div
                         id="from-results"
-                        class="absolute z-20 mt-2 hidden w-full rounded-lg border border-white/10 bg-complementary/95 p-2 text-sm shadow-lg"
+                        class="absolute z-20 mt-2 hidden w-full rounded-lg border border-white/10 bg-[var(--color-ink-elevated)]/95 p-2 text-sm shadow-lg backdrop-blur"
                     ></div>
                 </div>
 
@@ -45,34 +33,55 @@ import Layout from '../layouts/Layout.astro';
                     <input
                         id="to-input"
                         class="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-3 text-white outline-none focus:border-primary"
-                        placeholder="Search for a stop"
+                        placeholder="Enter an address"
                         autocomplete="off"
                     />
                     <div
                         id="to-results"
-                        class="absolute z-20 mt-2 hidden w-full rounded-lg border border-white/10 bg-complementary/95 p-2 text-sm shadow-lg"
+                        class="absolute z-20 mt-2 hidden w-full rounded-lg border border-white/10 bg-[var(--color-ink-elevated)]/95 p-2 text-sm shadow-lg backdrop-blur"
                     ></div>
                 </div>
 
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="space-y-2">
-                        <label class="text-sm uppercase tracking-wide text-white/70" for="time-type">Time</label>
-                        <select
-                            id="time-type"
-                            class="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-white outline-none focus:border-primary"
-                        >
-                            <option value="leave">Leave at</option>
-                            <option value="arrive">Arrive by</option>
-                        </select>
+                <div class="space-y-2">
+                    <label class="text-sm uppercase tracking-wide text-white/70">Departure</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" data-time-mode="now" class="time-pill active">Leave now</button>
+                        <button type="button" data-time-mode="leave" class="time-pill">Leave at</button>
+                        <button type="button" data-time-mode="arrive" class="time-pill">Arrive by</button>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-sm uppercase tracking-wide text-white/70" for="time-value">When</label>
+                    <div id="time-row" class="hidden">
                         <input
                             id="time-value"
                             type="datetime-local"
-                            class="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-white outline-none focus:border-primary"
+                            class="mt-3 w-full rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-white outline-none focus:border-primary"
                         />
                     </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button
+                        type="button"
+                        id="use-location"
+                        class="rounded-lg border border-white/30 px-4 py-2 text-sm text-white/80 transition hover:border-primary"
+                    >
+                        Use my location
+                    </button>
+                    <span id="location-status" class="text-xs text-white/60"></span>
+                </div>
+                <div id="location-actions" class="hidden flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        id="set-from-location"
+                        class="rounded-lg border border-white/30 px-3 py-2 text-xs uppercase tracking-wide text-white/80 transition hover:border-primary"
+                    >
+                        Set as From
+                    </button>
+                    <button
+                        type="button"
+                        id="set-to-location"
+                        class="rounded-lg border border-white/30 px-3 py-2 text-xs uppercase tracking-wide text-white/80 transition hover:border-primary"
+                    >
+                        Set as To
+                    </button>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
@@ -88,10 +97,32 @@ import Layout from '../layouts/Layout.astro';
                 <p id="status" class="text-sm text-white/70" role="status"></p>
             </form>
         </div>
+
+        <div class="space-y-4">
+            <div class="panel rounded-2xl p-4">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm uppercase tracking-wide text-white/70">Route map</p>
+                    <span id="map-status" class="text-xs text-white/50">Waiting for a plan.</span>
+                </div>
+                <div id="map" class="mt-4 h-72 rounded-xl border border-white/10"></div>
+            </div>
+            <div class="panel rounded-2xl p-6">
+                <p class="text-sm uppercase tracking-wide text-white/70">Alternatives</p>
+                <div id="alternatives" class="mt-4 space-y-3 text-sm text-white/80">
+                    <p>Plan a trip to see backup routes and timing variance.</p>
+                </div>
+                <div class="mt-6 border-t border-white/10 pt-4">
+                    <p class="text-sm uppercase tracking-wide text-white/70">Favorites (in memory)</p>
+                    <div id="favorites" class="mt-3 space-y-2 text-sm text-white/80">
+                        <p>No favorites yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <section class="mt-12 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div id="result-card" class="hidden rounded-2xl border border-white/10 bg-white/10 p-6">
+        <div id="result-card" class="hidden panel rounded-2xl p-6">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-sm uppercase tracking-wide text-white/70">Best option</p>
@@ -119,38 +150,47 @@ import Layout from '../layouts/Layout.astro';
                 </div>
             </div>
             <div class="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
+                <p class="text-sm uppercase tracking-wide text-white/60">Directions</p>
+                <div id="directions" class="mt-2 space-y-2 text-sm text-white/80">
+                    <p>Plan a route to see step highlights.</p>
+                </div>
+            </div>
+            <div class="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
                 <p class="text-sm uppercase tracking-wide text-white/60">Reliability notes</p>
                 <ul id="reliability-notes" class="mt-2 space-y-1 text-sm text-white/80"></ul>
                 <p id="stale-warning" class="mt-3 text-xs text-amber-200"></p>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-white/10 bg-white/10 p-6">
-            <p class="text-sm uppercase tracking-wide text-white/70">Alternatives</p>
-            <div id="alternatives" class="mt-4 space-y-3 text-sm text-white/80">
-                <p>Plan a trip to see backup routes and timing variance.</p>
-            </div>
-            <div class="mt-6 border-t border-white/10 pt-4">
-                <p class="text-sm uppercase tracking-wide text-white/70">Favorites (in memory)</p>
-                <div id="favorites" class="mt-3 space-y-2 text-sm text-white/80">
-                    <p>No favorites yet.</p>
+        <div class="panel rounded-2xl p-6">
+            <details class="text-sm text-white/80">
+                <summary class="cursor-pointer text-sm uppercase tracking-wide text-white/70">Confidence details</summary>
+                <div class="mt-3 space-y-3">
+                    <p>We balance ETA consistency, real-time coverage, and any active service alerts.</p>
+                    <p>This helps you decide whether to leave now or wait for a steadier option.</p>
                 </div>
-            </div>
+            </details>
         </div>
     </section>
 
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <script type="module">
         const statusEl = document.getElementById('status');
         const resultCard = document.getElementById('result-card');
         const alternativesEl = document.getElementById('alternatives');
         const favoritesEl = document.getElementById('favorites');
+        const directionsEl = document.getElementById('directions');
 
         const fromInput = document.getElementById('from-input');
         const toInput = document.getElementById('to-input');
         const fromResults = document.getElementById('from-results');
         const toResults = document.getElementById('to-results');
-        const timeType = document.getElementById('time-type');
         const timeValue = document.getElementById('time-value');
+        const locationStatus = document.getElementById('location-status');
+        const mapStatus = document.getElementById('map-status');
+        const locationActions = document.getElementById('location-actions');
+        const timeRow = document.getElementById('time-row');
+        const timeButtons = Array.from(document.querySelectorAll('[data-time-mode]'));
 
         const resultTitle = document.getElementById('result-title');
         const resultSummary = document.getElementById('result-summary');
@@ -165,7 +205,10 @@ import Layout from '../layouts/Layout.astro';
         const state = {
             from: null,
             to: null,
-            favorites: []
+            favorites: [],
+            location: null,
+            timeMode: 'now',
+            alternatives: []
         };
 
         const formatTime = (epoch) => {
@@ -188,7 +231,15 @@ import Layout from '../layouts/Layout.astro';
             statusEl.className = tone === 'error' ? 'text-sm text-amber-200' : 'text-sm text-white/70';
         };
 
-        const debounce = (fn, wait = 250) => {
+        const setLocationStatus = (message) => {
+            locationStatus.textContent = message;
+        };
+
+        const setMapStatus = (message) => {
+            mapStatus.textContent = message;
+        };
+
+        const debounce = (fn, wait = 600) => {
             let timer;
             return (...args) => {
                 clearTimeout(timer);
@@ -196,12 +247,100 @@ import Layout from '../layouts/Layout.astro';
             };
         };
 
-        const fetchStops = async (query) => {
-            const url = new URL('/api/transit/search', window.location.origin);
+        let lookupInFlight = false;
+        let lookupCooldownUntil = 0;
+
+        const geocodeAddress = async (query) => {
+            if (Date.now() < lookupCooldownUntil) {
+                setStatus('Address lookup cooling down after rate limit. Try again shortly.', 'error');
+                return [];
+            }
+            const url = new URL('/api/mapbox/geocode', window.location.origin);
             url.searchParams.set('query', query);
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Search failed');
-            return response.json();
+            let payload = null;
+            try {
+                payload = await response.json();
+            } catch {
+                payload = null;
+            }
+            if (!response.ok) {
+                if (response.status === 429) {
+                    lookupCooldownUntil = Date.now() + 2500;
+                    setStatus('Address lookup rate-limited. Please wait a moment and try again.', 'error');
+                }
+                throw new Error(payload?.error || 'Address lookup failed');
+            }
+            return payload?.results ?? [];
+        };
+
+        const fetchNearbyStops = async (lat, lon) => {
+            const url = new URL('/api/transit/nearby', window.location.origin);
+            url.searchParams.set('lat', lat);
+            url.searchParams.set('lon', lon);
+            const response = await fetch(url);
+            let payload = null;
+            try {
+                payload = await response.json();
+            } catch {
+                payload = null;
+            }
+            if (!response.ok) {
+                const error = new Error(payload?.error || 'Nearby stop search failed');
+                error.status = response.status;
+                throw error;
+            }
+            return payload;
+        };
+
+        const findStopsForAddress = async (query) => {
+            if (lookupInFlight) return { results: [] };
+            lookupInFlight = true;
+            try {
+                const locations = await geocodeAddress(query);
+                const topMatch = locations[0];
+                if (!topMatch) {
+                    return { results: [], label: null, coords: null };
+                }
+                let stopsPayload = null;
+                try {
+                    stopsPayload = await fetchNearbyStops(topMatch.lat, topMatch.lon);
+                } catch (error) {
+                    if (error?.status === 401) {
+                        setStatus('Nearby stops unavailable. Using the address directly.', 'error');
+                        return {
+                            results: [
+                                {
+                                    stop_name: topMatch.label ?? query,
+                                    stop_lat: topMatch.lat,
+                                    stop_lon: topMatch.lon,
+                                    agency_name: 'Address'
+                                }
+                            ],
+                            label: topMatch.label ?? query,
+                            coords: { lat: topMatch.lat, lon: topMatch.lon }
+                        };
+                    }
+                    throw error;
+                }
+                return {
+                    results: stopsPayload?.results ?? [],
+                    label: topMatch.label ?? query,
+                    coords: { lat: topMatch.lat, lon: topMatch.lon }
+                };
+            } finally {
+                lookupInFlight = false;
+            }
+        };
+
+        const shortenLabel = (label) => {
+            if (!label) return '';
+            const parts = String(label)
+                .split(',')
+                .map((part) => part.trim())
+                .filter(Boolean);
+            if (parts.length <= 2) return parts.join(', ');
+            return `${parts[0]}, ${parts[1]}`;
         };
 
         const renderResults = (container, items, onPick) => {
@@ -211,17 +350,22 @@ import Layout from '../layouts/Layout.astro';
                 return;
             }
             items.forEach((item) => {
+                const stopId = item.global_stop_id || item.stop_id || '';
+                const agencyFromId = typeof stopId === 'string' && stopId.includes(':') ? stopId.split(':')[0] : null;
+                const agency = item.agency_name || agencyFromId || 'Transit agency';
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.className =
-                    'flex w-full items-start justify-between rounded-md px-3 py-2 text-left text-white/80 hover:bg-white/10';
+                button.className = 'flex w-full items-start justify-between gap-4 rounded-md px-3 py-2 text-left hover:bg-white/5';
+                const titleWrap = document.createElement('div');
                 const title = document.createElement('span');
+                title.className = 'block text-white/90';
                 title.textContent = item.stop_name;
-                const meta = document.createElement('span');
-                meta.className = 'text-xs text-white/50';
-                meta.textContent = item.global_stop_id;
-                button.appendChild(title);
-                button.appendChild(meta);
+                const sub = document.createElement('span');
+                sub.className = 'mt-1 block text-xs text-white/60';
+                sub.textContent = agency;
+                titleWrap.appendChild(title);
+                titleWrap.appendChild(sub);
+                button.appendChild(titleWrap);
                 button.addEventListener('click', () => onPick(item));
                 container.appendChild(button);
             });
@@ -231,17 +375,29 @@ import Layout from '../layouts/Layout.astro';
         const setupAutocomplete = (input, container, setter) => {
             const handler = debounce(async () => {
                 const query = input.value.trim();
-                if (query.length < 2) {
+                if (query.length < 5) {
                     container.classList.add('hidden');
                     return;
                 }
                 try {
-                    const data = await fetchStops(query);
-                    renderResults(container, data.results || [], (item) => {
+                    setStatus('Finding nearby stops...');
+                    const data = await findStopsForAddress(query);
+                    const results = data.results || [];
+                    if (!results.length) {
+                        setStatus(`No nearby stops found for "${data.label ?? query}".`, 'error');
+                        container.classList.add('hidden');
+                        return;
+                    }
+                    renderResults(container, results, (item) => {
                         setter(item);
                         input.value = item.stop_name;
+                        const nearLabel = shortenLabel(data.label ?? query);
+                        setStatus(`Selected ${item.stop_name}${nearLabel ? ` near ${nearLabel}` : ''}.`);
                         container.classList.add('hidden');
                     });
+                    if (data.coords) {
+                        setMapView(data.coords.lat, data.coords.lon);
+                    }
                 } catch {
                     container.classList.add('hidden');
                 }
@@ -276,6 +432,295 @@ import Layout from '../layouts/Layout.astro';
         setupAutocomplete(fromInput, fromResults, (item) => (state.from = item));
         setupAutocomplete(toInput, toResults, (item) => (state.to = item));
 
+        const setTimeMode = (mode) => {
+            state.timeMode = mode;
+            timeButtons.forEach((button) => {
+                button.classList.toggle('active', button.dataset.timeMode === mode);
+            });
+            if (mode === 'now') {
+                timeRow.classList.add('hidden');
+                timeValue.value = '';
+            } else {
+                timeRow.classList.remove('hidden');
+            }
+        };
+
+        timeButtons.forEach((button) => {
+            button.addEventListener('click', () => setTimeMode(button.dataset.timeMode));
+        });
+        setTimeMode('now');
+
+        const useLocation = () => {
+            if (!navigator.geolocation) {
+                setLocationStatus('Geolocation not supported in this browser.');
+                return;
+            }
+            setLocationStatus('Requesting location...');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = Number(position.coords.latitude.toFixed(6));
+                    const lon = Number(position.coords.longitude.toFixed(6));
+                    state.location = { stop_lat: lat, stop_lon: lon, stop_name: 'Current location' };
+                    setLocationStatus('Location ready. Choose From or To.');
+                    locationActions.classList.remove('hidden');
+                    setMapView(lat, lon);
+                },
+                (error) => {
+                    let message = 'Unable to fetch location.';
+                    if (error?.code === 1) message = 'Location permission denied.';
+                    if (error?.code === 2) message = 'Location unavailable.';
+                    if (error?.code === 3) message = 'Location request timed out.';
+                    setLocationStatus(message);
+                    locationActions.classList.add('hidden');
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
+            );
+        };
+
+        const baseStyle = {
+            version: 8,
+            sources: {
+                osm: {
+                    type: 'raster',
+                    tiles: ['https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+                }
+            },
+            layers: [
+                {
+                    id: 'osm',
+                    type: 'raster',
+                    source: 'osm'
+                }
+            ]
+        };
+
+        let map = null;
+        let mapReady = false;
+        let pendingRoute = null;
+        let pendingStops = null;
+        let stopMarkers = [];
+
+        const initMap = () => {
+            if (typeof maplibregl === 'undefined' || typeof maplibregl.Map !== 'function') {
+                setMapStatus('Map library failed to load.');
+                return;
+            }
+            map = new maplibregl.Map({
+                container: 'map',
+                style: baseStyle,
+                center: [-79.3832, 43.6532],
+                zoom: 12
+            });
+            map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+            map.on('error', () => {
+                setMapStatus('Map failed to load.');
+            });
+            map.on('load', () => {
+                mapReady = true;
+                ensureSources();
+                if (pendingRoute) updateRoute(pendingRoute);
+                if (pendingStops) updateStops(pendingStops);
+            });
+        };
+
+        const ensureSources = () => {
+            if (!map) return;
+            if (map.getSource('route')) return;
+            map.addSource('route', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+            map.addLayer({
+                id: 'route-glow',
+                type: 'line',
+                source: 'route',
+                filter: ['==', ['get', 'kind'], 'polyline'],
+                paint: {
+                    'line-color': ['coalesce', ['get', 'color'], '#f67280'],
+                    'line-opacity': 0.25,
+                    'line-width': 10
+                }
+            });
+            map.addLayer({
+                id: 'route-line',
+                type: 'line',
+                source: 'route',
+                filter: ['==', ['get', 'kind'], 'polyline'],
+                paint: {
+                    'line-color': ['coalesce', ['get', 'color'], '#f67280'],
+                    'line-opacity': 0.9,
+                    'line-width': 4
+                }
+            });
+            map.addLayer({
+                id: 'route-fallback',
+                type: 'line',
+                source: 'route',
+                filter: ['==', ['get', 'kind'], 'fallback'],
+                paint: {
+                    'line-color': '#f67280',
+                    'line-opacity': 0.55,
+                    'line-width': 3,
+                    'line-dasharray': [1.2, 1.2]
+                }
+            });
+        };
+
+        initMap();
+
+        const setMapView = (lat, lon) => {
+            if (!map || !mapReady) return;
+            if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                map.flyTo({ center: [lon, lat], zoom: 13 });
+            }
+        };
+
+        const decodePolyline = (encoded) => {
+            let index = 0;
+            let lat = 0;
+            let lng = 0;
+            const coordinates = [];
+
+            while (index < encoded.length) {
+                let result = 0;
+                let shift = 0;
+                let byte;
+                do {
+                    byte = encoded.charCodeAt(index++) - 63;
+                    result |= (byte & 0x1f) << shift;
+                    shift += 5;
+                } while (byte >= 0x20);
+                const deltaLat = (result & 1) ? ~(result >> 1) : result >> 1;
+                lat += deltaLat;
+
+                result = 0;
+                shift = 0;
+                do {
+                    byte = encoded.charCodeAt(index++) - 63;
+                    result |= (byte & 0x1f) << shift;
+                    shift += 5;
+                } while (byte >= 0x20);
+                const deltaLon = (result & 1) ? ~(result >> 1) : result >> 1;
+                lng += deltaLon;
+
+                coordinates.push([lng / 1e5, lat / 1e5]);
+            }
+
+            return coordinates;
+        };
+
+        const normalizeColor = (color) => {
+            if (!color) return '#f67280';
+            if (color.startsWith('#')) return color;
+            return `#${color}`;
+        };
+
+        const updateRoute = (segments) => {
+            if (!map || !mapReady) {
+                pendingRoute = segments;
+                return;
+            }
+            ensureSources();
+
+            const features = segments.map((segment) => ({
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates: segment.coords },
+                properties: { kind: segment.kind, color: segment.color }
+            }));
+
+            const shouldFallback = segments.length < 2 && state.from && state.to;
+            if (shouldFallback) {
+                features.push({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: [
+                            [state.from.stop_lon, state.from.stop_lat],
+                            [state.to.stop_lon, state.to.stop_lat]
+                        ]
+                    },
+                    properties: { kind: 'fallback' }
+                });
+            }
+
+            const routeData = {
+                type: 'FeatureCollection',
+                features
+            };
+            map.getSource('route').setData(routeData);
+            fitRouteBounds(features.flatMap((feature) => feature.geometry.coordinates));
+        };
+
+        const drawRoute = async (legs) => {
+            const segments = [];
+
+            legs.forEach((leg) => {
+                if (leg.polyline) {
+                    segments.push({ coords: decodePolyline(leg.polyline), kind: 'polyline', color: normalizeColor(leg.color) });
+                    return;
+                }
+            });
+
+            updateRoute(segments);
+        };
+
+        const updateStops = (stops) => {
+            if (!map || !mapReady) {
+                pendingStops = stops;
+                return;
+            }
+            stopMarkers.forEach((marker) => marker.remove());
+            stopMarkers = [];
+            stops.forEach((stop) => {
+                if (Number.isFinite(stop.stop_lat) && Number.isFinite(stop.stop_lon)) {
+                    const marker = new maplibregl.Marker({ color: '#f67280' })
+                        .setLngLat([stop.stop_lon, stop.stop_lat])
+                        .setPopup(new maplibregl.Popup({ offset: 12 }).setText(stop.stop_name))
+                        .addTo(map);
+                    stopMarkers.push(marker);
+                }
+            });
+        };
+
+        const fitRouteBounds = (coords) => {
+            if (!map) return;
+            if (!coords.length) return;
+            let minLng = coords[0][0];
+            let maxLng = coords[0][0];
+            let minLat = coords[0][1];
+            let maxLat = coords[0][1];
+            coords.forEach(([lng, lat]) => {
+                minLng = Math.min(minLng, lng);
+                maxLng = Math.max(maxLng, lng);
+                minLat = Math.min(minLat, lat);
+                maxLat = Math.max(maxLat, lat);
+            });
+            map.fitBounds(
+                [
+                    [minLng, minLat],
+                    [maxLng, maxLat]
+                ],
+                { padding: 32, duration: 800 }
+            );
+        };
+
+        document.getElementById('use-location').addEventListener('click', useLocation);
+        document.getElementById('set-from-location').addEventListener('click', () => {
+            if (!state.location) return;
+            state.from = { ...state.location };
+            fromInput.value = state.location.stop_name;
+            setStatus('Origin set to current location.');
+        });
+        document.getElementById('set-to-location').addEventListener('click', () => {
+            if (!state.location) return;
+            state.to = { ...state.location };
+            toInput.value = state.location.stop_name;
+            setStatus('Destination set to current location.');
+        });
+        setLocationStatus('Tap "Use my location" to use your current location.');
+
         document.getElementById('swap-button').addEventListener('click', () => {
             const temp = state.from;
             state.from = state.to;
@@ -285,6 +730,66 @@ import Layout from '../layouts/Layout.astro';
             toInput.value = fromValue;
         });
 
+        const renderPlan = (plan, label) => {
+            resultCard.classList.remove('hidden');
+            resultTitle.textContent = plan?.summary || label || 'Best route';
+            const firstTransit = plan?.legs?.find((leg) => leg.mode === 'transit');
+            resultSummary.textContent = '';
+            leaveTime.textContent = formatTime(plan?.start_time);
+            arriveTime.textContent = formatTime(plan?.end_time);
+            duration.textContent = formatDuration(plan?.duration);
+
+            directionsEl.innerHTML = '';
+            (plan?.legs || []).forEach((leg) => {
+                const row = document.createElement('div');
+                row.className = 'rounded-lg border border-white/10 bg-white/5 px-3 py-2';
+                if (leg.mode === 'transit') {
+                    const header = document.createElement('div');
+                    header.className = 'flex items-center gap-2 text-white/90';
+                    const dot = document.createElement('span');
+                    dot.className = 'route-dot';
+                    dot.style.backgroundColor = normalizeColor(leg.color);
+                    const label = document.createElement('span');
+                    const transitDuration = leg.duration ? ` • ${formatDuration(leg.duration)}` : '';
+                    label.textContent = `${leg.label}${transitDuration}`;
+                    header.appendChild(dot);
+                    header.appendChild(label);
+                    row.appendChild(header);
+
+                    const boardName =
+                        leg.board_stop?.stop_name && leg.board_stop.stop_name !== 'Stop' ? leg.board_stop.stop_name : '';
+                    const alightName =
+                        leg.alight_stop?.stop_name && leg.alight_stop.stop_name !== 'Stop' ? leg.alight_stop.stop_name : '';
+                    const board = boardName ? `Board at ${boardName}` : 'Board';
+                    const boardTime = leg.board_stop?.departure_time ? ` • ${formatTime(leg.board_stop.departure_time)}` : '';
+                    const alight = alightName ? `Exit at ${alightName}` : 'Exit';
+                    const alightTime = leg.alight_stop?.arrival_time ? ` • ${formatTime(leg.alight_stop.arrival_time)}` : '';
+                    const detail = document.createElement('div');
+                    detail.className = 'mt-2 text-sm text-white/70';
+                    detail.textContent = `${board}${boardTime} -> ${alight}${alightTime}`;
+                    row.appendChild(detail);
+
+                    if (Array.isArray(leg.stops) && leg.stops.length > 2) {
+                        const list = document.createElement('div');
+                        list.className = 'mt-2 text-xs text-white/60';
+                        const midStops = leg.stops.slice(1, -1).map((stop) => stop.stop_name).join(' • ');
+                        list.textContent = `Stops: ${midStops}`;
+                        row.appendChild(list);
+                    }
+                } else {
+                    const timeLine =
+                        leg.start_time && leg.end_time ? `${formatTime(leg.start_time)}–${formatTime(leg.end_time)}` : '';
+                    const parts = [leg.label, formatDuration(leg.duration), timeLine].filter(Boolean);
+                    row.textContent = parts.join(' • ');
+                }
+                directionsEl.appendChild(row);
+            });
+
+            updateStops([state.from, state.to]);
+            drawRoute(plan?.legs || []);
+            setMapStatus('Planned route preview.');
+        };
+
         document.getElementById('plan-form').addEventListener('submit', async (event) => {
             event.preventDefault();
             if (!state.from || !state.to) {
@@ -293,6 +798,8 @@ import Layout from '../layouts/Layout.astro';
             }
             setStatus('Planning your route...');
             const timeSelection = timeValue.value ? Math.floor(new Date(timeValue.value).getTime() / 1000) : null;
+            const timeType = state.timeMode === 'arrive' ? 'arrive' : 'leave';
+            const timeValuePayload = state.timeMode === 'now' ? null : timeSelection;
 
             try {
                 const response = await fetch('/api/transit/plan', {
@@ -301,8 +808,8 @@ import Layout from '../layouts/Layout.astro';
                     body: JSON.stringify({
                         from: state.from,
                         to: state.to,
-                        timeType: timeType.value,
-                        timeValue: timeSelection
+                        timeType,
+                        timeValue: timeValuePayload
                     })
                 });
                 const data = await response.json();
@@ -310,12 +817,6 @@ import Layout from '../layouts/Layout.astro';
                     throw new Error(data.error || 'Planning failed');
                 }
 
-                resultCard.classList.remove('hidden');
-                resultTitle.textContent = data.best?.summary || 'Best route';
-                resultSummary.textContent = `From ${state.from.stop_name} to ${state.to.stop_name}`;
-                leaveTime.textContent = formatTime(data.best?.start_time);
-                arriveTime.textContent = formatTime(data.best?.end_time);
-                duration.textContent = formatDuration(data.best?.duration);
                 confidenceScore.textContent = `${data.reliability?.score ?? '--'}/100`;
                 confidenceLevel.textContent = data.reliability?.level || '';
 
@@ -332,13 +833,17 @@ import Layout from '../layouts/Layout.astro';
 
                 alternativesEl.innerHTML = '';
                 const alternatives = data.alternatives || [];
+                state.alternatives = alternatives;
                 if (alternatives.length === 0) {
                     alternativesEl.textContent = 'No alternates returned.';
                 } else {
-                    alternatives.forEach((alt) => {
-                        const row = document.createElement('div');
-                        row.className = 'rounded-lg border border-white/10 bg-white/5 px-3 py-2';
+                    alternatives.forEach((alt, index) => {
+                        const row = document.createElement('button');
+                        row.type = 'button';
+                        row.className =
+                            'flex w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-white/80 hover:border-primary';
                         row.textContent = `${alt.summary} | ${formatDuration(alt.duration)}`;
+                        row.addEventListener('click', () => renderPlan(alt, `Alternative ${index + 1}`));
                         alternativesEl.appendChild(row);
                     });
                 }
@@ -347,6 +852,12 @@ import Layout from '../layouts/Layout.astro';
                     state.favorites.unshift({ from: state.from, to: state.to });
                     state.favorites = state.favorites.slice(0, 3);
                     renderFavorites();
+                }
+
+                if (data.best?.legs) {
+                    renderPlan(data.best, 'Best route');
+                } else {
+                    setMapStatus('No route geometry returned.');
                 }
 
                 setStatus('Ready.');

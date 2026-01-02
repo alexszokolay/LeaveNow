@@ -66,7 +66,8 @@ export const POST: APIRoute = async ({ request }) => {
             await fetchTransitJson('/v3/public/plan', params, { cacheKey, ttlMs: 60_000 });
             results.push({ ok: true, params });
         } catch (error) {
-            results.push({ ok: false, params, error: (error as Error).message });
+            const status = (error as Error & { status?: number }).status;
+            results.push({ ok: false, params, status, error: (error as Error).message });
         }
     }
 

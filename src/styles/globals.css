@@ -5,6 +5,11 @@
     --color-primary: #f67280;
     --color-primary-content: #101828;
     --color-complementary: #355c7d;
+    --color-ink: #06070b;
+    --color-ink-elevated: #0d1119;
+    --color-ink-border: #1a2230;
+    --background-image-sheen: radial-gradient(circle at top left, rgba(32, 46, 70, 0.7), transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(18, 24, 36, 0.9), transparent 45%);
     --background-image-noise: linear-gradient(
             to bottom,
             color-mix(in oklab, var(--color-gray-950) 0%, transparent),
@@ -74,5 +79,33 @@
         --btn-font-size: 1.125rem;
         --btn-px: 1.5rem;
         --btn-py: 1.125rem;
+    }
+
+    .time-pill {
+        @apply rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-wide text-white/70 transition;
+    }
+
+    .time-pill:hover {
+        @apply border-primary text-white;
+    }
+
+    .time-pill.active {
+        @apply border-primary bg-primary/20 text-white;
+    }
+
+    .route-dot {
+        @apply inline-flex h-2.5 w-2.5 shrink-0 rounded-full border border-white/30;
+    }
+}
+
+@layer base {
+    body {
+        @apply bg-[var(--color-ink)] text-white;
+        background-image: var(--background-image-sheen), var(--background-image-noise);
+        background-attachment: fixed;
+    }
+
+    .panel {
+        @apply border border-[var(--color-ink-border)] bg-[var(--color-ink-elevated)]/80 shadow-xl backdrop-blur;
     }
 }

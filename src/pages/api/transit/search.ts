@@ -33,13 +33,14 @@ export const GET: APIRoute = async ({ url }) => {
             headers: { 'Content-Type': 'application/json' }
         });
     } catch (error) {
+        const status = (error as Error & { status?: number }).status ?? 502;
         return new Response(
             JSON.stringify({
                 results: [],
                 error: (error as Error).message
             }),
             {
-                status: 502,
+                status,
                 headers: { 'Content-Type': 'application/json' }
             }
         );
